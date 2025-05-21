@@ -1,0 +1,345 @@
+/* modern-firebase-theme.css - Firebase-inspired black and orange theme */
+
+/* Importing high-quality Google fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Firebase-inspired color palette */
+  --bg-dark-primary: #121212;
+  --bg-dark-secondary: #1a1a1a;
+  --bg-dark-tertiary: #222222;
+  --bg-card: #282828;
+  --bg-card-hover: #333333;
+  
+  /* Firebase accent colors */
+  --firebase-orange: #FF9800;
+  --firebase-orange-dark: #F57C00;
+  --firebase-orange-light: #FFB74D;
+  --firebase-orange-faded: rgba(255, 152, 0, 0.15);
+  
+  /* Gradients */
+  --gradient-orange: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+  --gradient-orange-alt: linear-gradient(135deg, #FFB74D 0%, #FF9800 100%);
+  --gradient-dark: linear-gradient(135deg, #333333 0%, #222222 100%);
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.25);
+  --shadow-glow: 0 0 15px rgba(255, 152, 0, 0.25);
+  --shadow-glow-strong: 0 0 25px rgba(255, 152, 0, 0.4);
+  
+  /* Border radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  
+  /* Transitions */
+  --transition-fast: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-medium: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Font family */
+  --font-primary: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --font-secondary: 'Manrope', 'Inter', system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Base styles */
+body {
+  font-family: var(--font-primary);
+  background-color: var(--bg-dark-primary);
+  color: #fff;
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography customization */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-primary);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+/* Modernized component styles */
+.card-modern {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-medium);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.card-modern:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  border-color: rgba(255, 152, 0, 0.3);
+}
+
+.button-modern {
+  background: var(--gradient-orange);
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  font-weight: 500;
+  font-family: var(--font-primary);
+  padding: 0.625rem 1.25rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+  letter-spacing: 0.01em;
+}
+
+.button-modern:hover {
+  background: var(--gradient-orange-alt);
+  box-shadow: var(--shadow-md), var(--shadow-glow);
+  transform: translateY(-2px);
+}
+
+/* Glassmorphism for floating elements */
+.glass-panel {
+  background: rgba(40, 40, 40, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 152, 0, 0.6);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 152, 0, 0.8);
+}
+
+/* Refined animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 10px rgba(255, 152, 0, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(255, 152, 0, 0.6); }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s forwards;
+}
+
+/* Animation for element entry */
+.stagger-item {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.stagger-item-visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+/* Mobile responsiveness improvements */
+@media (max-width: 768px) {
+  :root {
+    --radius-lg: 0.5rem; /* Slightly reduced radius on mobile */
+  }
+  
+  .card-modern {
+    border-radius: var(--radius-md);
+  }
+  
+  .mobile-full-width {
+    width: 100% !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+  
+  .mobile-stack {
+    flex-direction: column !important;
+  }
+}
+
+/* Sidebar style */
+.sidebar-modern {
+  background: var(--bg-dark-tertiary);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Input style */
+.input-modern {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  color: white;
+  padding: 0.625rem 0.875rem;
+  transition: all var(--transition-fast);
+}
+
+.input-modern:focus {
+  border-color: rgba(255, 152, 0, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.2);
+  outline: none;
+}
+
+/* Modern tooltip */
+.tooltip-modern {
+  --tooltip-bg: rgba(40, 40, 40, 0.95);
+  --tooltip-color: white;
+  
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip-modern .tooltip-content {
+  visibility: hidden;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-color);
+  text-align: center;
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  position: absolute;
+  z-index: 100;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  box-shadow: var(--shadow-md);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tooltip-modern:hover .tooltip-content {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Modern badge style */
+.badge-modern {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--firebase-orange-faded);
+  color: var(--firebase-orange);
+  border-radius: 9999px;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
+/* Modernized chart styles */
+.chart-modern .recharts-surface {
+  overflow: visible;
+}
+
+.chart-modern .recharts-cartesian-grid-horizontal line,
+.chart-modern .recharts-cartesian-grid-vertical line {
+  stroke: rgba(255, 255, 255, 0.07);
+}
+
+.chart-modern .recharts-tooltip-wrapper {
+  filter: drop-shadow(0px 2px 8px rgba(0, 0, 0, 0.25));
+}
+
+.chart-modern .recharts-default-tooltip {
+  background: var(--bg-dark-tertiary) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-md) !important;
+  padding: 0.75rem !important;
+}
+
+/* Modern loading spinner */
+.spinner-modern {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid rgba(255, 152, 0, 0.2);
+  border-top-color: rgba(255, 152, 0, 1);
+  border-radius: 50%;
+  animation: spinner 0.8s linear infinite;
+}
+
+@keyframes spinner {
+  to { transform: rotate(360deg); }
+}
+
+/* Firebase-specific styles */
+.firebase-gradient-text {
+  background: linear-gradient(90deg, #FF9800, #F57C00);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
+.firebase-card {
+  background: var(--bg-card);
+  border-left: 3px solid var(--firebase-orange);
+}
+
+.firebase-btn {
+  background-color: var(--firebase-orange);
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+.firebase-btn:hover {
+  background-color: var(--firebase-orange-dark);
+}
+
+.firebase-highlight {
+  color: var(--firebase-orange);
+}
+
+.firebase-chip {
+  background-color: var(--firebase-orange-faded);
+  color: var(--firebase-orange);
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}

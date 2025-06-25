@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Preconnect para Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Fontes modernas -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Dashboard de Email Marketing</title>
+    <style>
+      /* Aplicando fonte padrão e cor de fundo durante o carregamento */
+      html, body {
+        font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+        background-color: #0a0b16;
+        color: #fff;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      
+      /* Loading animation para melhorar a experiência do usuário */
+      #loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #0a0b16;
+        z-index: 9999;
+        transition: opacity 0.5s ease, visibility 0.5s ease;
+      }
+      
+      .spinner {
+        width: 2.5rem;
+        height: 2.5rem;
+        border: 3px solid rgba(139, 92, 246, 0.2);
+        border-top-color: rgba(139, 92, 246, 1);
+        border-radius: 50%;
+        animation: spinner 0.8s linear infinite;
+      }
+      
+      @keyframes spinner {
+        to { transform: rotate(360deg); }
+      }
+      
+      /* Removendo o loading quando a página estiver carregada */
+      .loaded #loading {
+        opacity: 0;
+        visibility: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Loading spinner -->
+    <div id="loading">
+      <div class="spinner"></div>
+    </div>
+    
+    <div id="root"></div>
+    
+    <script type="module" src="/src/main.jsx"></script>
+    
+    <script>
+      // Remover loading quando a página carregar
+      window.addEventListener('load', () => {
+        document.body.classList.add('loaded');
+        setTimeout(() => {
+          document.getElementById('loading').style.display = 'none';
+        }, 500);
+      });
+    </script>
+  </body>
+</html>

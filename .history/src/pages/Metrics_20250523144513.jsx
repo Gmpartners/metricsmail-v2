@@ -1,0 +1,715 @@
+import { useState, useEffect } from 'react';
+import { useMetrics } from '../contexts/MetricsContext';
+import { 
+  Search,
+  Calendar,
+  Filter,
+  Download,
+  Mail,
+  Eye,
+  MousePointer,
+  AlertTriangle,
+  UserMinus,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  Server,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
+} from 'lucide-react';
+
+const Metrics = () => {
+  const { 
+    accounts,
+    accountsLoading,
+    loading,
+    error,
+    fetchMetricsByEmail,
+    getUserId
+  } = useMetrics();
+
+  const [selectedAccount, setSelectedAccount] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState('sentCount');
+  const [sortDirection, setSortDirection] = useState('desc');
+  
+  const [emailMetrics, setEmailMetrics] = useState([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: 20,
+    totalItems: 0,
+    totalPages: 0
+  });
+  
+  const [tableLoading, setTableLoading] = useState(false);
+  const [tableError, setTableError] = useState('');
+
+  const loadEmailMetrics = async (page = 1) => {
+    const userId = getUserId();
+    if (!userId) return;
+
+    setTableLoading(true);
+    setTableError('');
+
+    try {
+      const filters = {
+        page: page,
+        limit: pagination.pageSize
+      };
+
+      if (selectedAccount && selectedAccount !== 'all') {
+        filters.accountIds = selectedAccount;
+      }
+      
+      if (startDate) {
+        filters.startDate = startDate;
+      }
+      
+      if (endDate) {
+        filters.endDate = endDate;
+      }
+      
+      if (searchTerm.trim()) {
+        filters.search = searchTerm.trim();
+      }
+
+      console.log('🔄 Carregando métricas por email com filtros:', filters);
+      
+      const response = await fetchMetricsByEmail(filters);
+      
+      if (response && response.success && response.data) {
+        setEmailMetrics(response.data.emails || []);
+        setPagination({
+          page: response.data.pagination?.page || 1,
+          pageSize: response.data.pagination?.pageSize || 20,
+          totalItems: response.data.pagination?.totalItems || 0,
+          totalPages: response.data.pagination?.totalPages || 0
+        });
+        console.log('✅ Métricas carregadas:', response.data.emails?.length || 0, 'emails');
+      } else {
+        setEmailMetrics([]);
+        setPagination({ page: 1, pageSize: 20, totalItems: 0, totalPages: 0 });
+        console.log('📝 Nenhuma métrica encontrada');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar métricas:', error);
+      setTableError('Erro ao carregar métricas');
+      setEmailMetrics([]);
+    } finally {
+      setTableLoading(false);
+    }
+  };
+
+  const applyFilters = () => {
+    loadEmailMetrics(1);
+  };
+
+  const clearFilters = () => {
+    setSelectedAccount('all');
+    setStartDate('');
+    setEndDate('');
+    setSearchTerm('');
+    setSortField('sentCount');
+    setSortDirection('desc');
+    setTimeout(() => loadEmailMetrics(1), 100);
+  };
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  const sortEmailMetrics = (emails) => {
+    if (!emails || emails.length === 0) return emails;
+
+    return [...emails].sort((a, b) => {
+      const aMetrics = a.metrics || {};
+      const bMetrics = b.metrics || {};
+      
+      let aValue, bValue;
+
+      switch (sortField) {
+        case 'name':
+          aValue = (a.name || a.subject || '').toLowerCase();
+          bValue = (b.name || b.subject || '').toLowerCase();
+          break;
+        case 'subject':
+          aValue = (a.subject || '').toLowerCase();
+          bValue = (b.subject || '').toLowerCase();
+          break;
+        case 'sentCount':
+          aValue = aMetrics.sentCount || 0;
+          bValue = bMetrics.sentCount || 0;
+          break;
+        case 'openCount':
+          aValue = aMetrics.openCount || 0;
+          bValue = bMetrics.openCount || 0;
+          break;
+        case 'uniqueOpenCount':
+          aValue = aMetrics.uniqueOpenCount || 0;
+          bValue = bMetrics.uniqueOpenCount || 0;
+          break;
+        case 'openRate':
+          aValue = (aMetrics.sentCount > 0) ? (aMetrics.openCount / aMetrics.sentCount * 100) : 0;
+          bValue = (bMetrics.sentCount > 0) ? (bMetrics.openCount / bMetrics.sentCount * 100) : 0;
+          break;
+        case 'clickCount':
+          aValue = aMetrics.clickCount || 0;
+          bValue = bMetrics.clickCount || 0;
+          break;
+        case 'uniqueClickCount':
+          aValue = aMetrics.uniqueClickCount || 0;
+          bValue = bMetrics.uniqueClickCount || 0;
+          break;
+        case 'clickRate':
+          aValue = (aMetrics.sentCount > 0) ? (aMetrics.clickCount / aMetrics.sentCount * 100) : 0;
+          bValue = (bMetrics.sentCount > 0) ? (bMetrics.clickCount / bMetrics.sentCount * 100) : 0;
+          break;
+        case 'ctr':
+          aValue = (aMetrics.openCount > 0) ? (aMetrics.clickCount / aMetrics.openCount * 100) : 0;
+          bValue = (bMetrics.openCount > 0) ? (bMetrics.clickCount / bMetrics.openCount * 100) : 0;
+          break;
+        case 'bounceCount':
+          aValue = aMetrics.bounceCount || 0;
+          bValue = bMetrics.bounceCount || 0;
+          break;
+        case 'unsubscribeCount':
+          aValue = aMetrics.unsubscribeCount || 0;
+          bValue = bMetrics.unsubscribeCount || 0;
+          break;
+        default:
+          aValue = 0;
+          bValue = 0;
+      }
+
+      if (typeof aValue === 'string') {
+        return sortDirection === 'asc' 
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      } else {
+        return sortDirection === 'asc' 
+          ? aValue - bValue
+          : bValue - aValue;
+      }
+    });
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= pagination.totalPages) {
+      loadEmailMetrics(newPage);
+    }
+  };
+
+  useEffect(() => {
+    loadEmailMetrics(1);
+  }, []);
+
+  useEffect(() => {
+    if (!startDate && !endDate) {
+      const today = new Date();
+      const thirtyDaysAgo = new Date(today);
+      thirtyDaysAgo.setDate(today.getDate() - 30);
+      
+      setEndDate(today.toISOString().split('T')[0]);
+      setStartDate(thirtyDaysAgo.toISOString().split('T')[0]);
+    }
+  }, []);
+
+  const calculateCTR = (clicks, opens) => {
+    if (!opens || opens === 0) return 0;
+    return ((clicks / opens) * 100);
+  };
+
+  const isAccountSelected = selectedAccount !== 'all';
+
+  if (accountsLoading && !accounts.length) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-purple-600 border-t-transparent"></div>
+          <p className="mt-4 text-gray-600">Loading accounts...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Email Metrics</h2>
+            <p className="text-gray-600">Detailed performance analysis of your email campaigns</p>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Conta:</span>
+            <select
+              value={selectedAccount}
+              onChange={(e) => setSelectedAccount(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-sm min-w-[180px] font-medium"
+            >
+              <option value="all">Selecione uma conta</option>
+              {accounts.map(account => (
+                <option key={account._id || account.id} value={account._id || account.id}>
+                  {account.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        
+        <button
+          onClick={() => loadEmailMetrics(pagination.page)}
+          disabled={tableLoading}
+          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+        >
+          <RefreshCw className={`h-4 w-4 ${tableLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
+      </div>
+
+      <div className="relative">
+        {!isAccountSelected && (
+          <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
+            <div className="text-center max-w-md mx-auto p-8">
+              <div className="mx-auto h-16 w-16 bg-purple-100 rounded-full flex items-center justify-center mb-6">
+                <Server className="h-8 w-8 text-purple-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                Selecione uma Conta
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Para visualizar as métricas detalhadas, você precisa selecionar uma conta específica do Mautic no seletor acima.
+              </p>
+              <div className="text-sm text-gray-500">
+                Use o seletor "Conta" ao lado do título para escolher uma conta conectada.
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className={`space-y-6 ${!isAccountSelected ? 'blur-sm pointer-events-none' : ''}`}>
+          {(error || tableError) && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-red-800">{error || tableError}</p>
+            </div>
+          )}
+
+          <div className="bg-white p-6 rounded-lg shadow border">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Filters</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                <input
+                  type="text"
+                  placeholder="Search emails..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && applyFilters()}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              <div className="flex gap-2 items-end">
+                <button
+                  onClick={applyFilters}
+                  disabled={tableLoading}
+                  className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <Filter className="h-4 w-4" />
+                  Apply
+                </button>
+                <button
+                  onClick={clearFilters}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow border overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Email Performance ({pagination.totalItems} total)
+              </h3>
+              <button className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                <Download className="h-4 w-4" />
+                Export
+              </button>
+            </div>
+
+            {tableLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-purple-600 border-t-transparent"></div>
+                  <p className="mt-2 text-gray-600">Loading metrics...</p>
+                </div>
+              </div>
+            ) : emailMetrics.length === 0 ? (
+              <div className="text-center py-12">
+                <Mail className="mx-auto h-12 w-12 text-gray-400" />
+                <p className="mt-4 text-gray-500">No email metrics found</p>
+                <p className="text-sm text-gray-400">Try adjusting your filters or date range</p>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('name')}
+                        >
+                          <div className="flex items-center gap-1">
+                            Email Name
+                            {sortField === 'name' ? (
+                              sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                            ) : (
+                              <ArrowUpDown className="h-3 w-3 opacity-50" />
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('subject')}
+                        >
+                          <div className="flex items-center gap-1">
+                            Subject
+                            {sortField === 'subject' ? (
+                              sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                            ) : (
+                              <ArrowUpDown className="h-3 w-3 opacity-50" />
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('sentCount')}
+                        >
+                          <div className="flex items-center justify-end gap-1">
+                            Sent
+                            {sortField === 'sentCount' ? (
+                              sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                            ) : (
+                              <ArrowUpDown className="h-3 w-3 opacity-50" />
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('openCount')}
+                        >
+                          <div className="flex items-center justify-end gap-1">
+                            Opens
+                            {sortField === 'openCount' ? (
+                              sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                            ) : (
+                              <ArrowUpDown className="h-3 w-3 opacity-50" />
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('uniqueOpenCount')}
+                        >
+                          <div className="flex items-center justify-end gap-1">
+                            Unique Opens
+                            {sortField === 'uniqueOpenCount' ? (
+                              sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                            ) : (
+                              <ArrowUpDown className="h-3 w-3 opacity-50" />
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('openRate')}
+                        >
+                          <div className="flex items-center justify-end gap-1">
+                            Open Rate
+                            {sortField === 'openRate' ? (
+                              sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                            ) : (
+                              <ArrowUpDown className="h-3 w-3 opacity-50" />
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('clickCount')}
+                        >
+                          <div className="flex items-center justify-end gap-1">
+                            Clicks
+                            {sortField === 'clickCount' ? (
+                              sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                            ) : (
+                              <ArrowUpDown className="h-3 w-3 opacity-50" />
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('uniqueClickCount')}
+                        >
+                          <div className="flex items-center justify-end gap-1">
+                            Unique Clicks
+                            {sortField === 'uniqueClickCount' ? (
+                              sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                            ) : (
+                              <ArrowUpDown className="h-3 w-3 opacity-50" />
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('clickRate')}
+                        >
+                          <div className="flex items-center justify-end gap-1">
+                            Click Rate
+                            {sortField === 'clickRate' ? (
+                              sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                            ) : (
+                              <ArrowUpDown className="h-3 w-3 opacity-50" />
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('ctr')}
+                        >
+                          <div className="flex items-center justify-end gap-1">
+                            CTR
+                            {sortField === 'ctr' ? (
+                              sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                            ) : (
+                              <ArrowUpDown className="h-3 w-3 opacity-50" />
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('bounceCount')}
+                        >
+                          <div className="flex items-center justify-end gap-1">
+                            Bounces
+                            {sortField === 'bounceCount' ? (
+                              sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                            ) : (
+                              <ArrowUpDown className="h-3 w-3 opacity-50" />
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                          onClick={() => handleSort('unsubscribeCount')}
+                        >
+                          <div className="flex items-center justify-end gap-1">
+                            Unsubscribes
+                            {sortField === 'unsubscribeCount' ? (
+                              sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                            ) : (
+                              <ArrowUpDown className="h-3 w-3 opacity-50" />
+                            )}
+                          </div>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {sortEmailMetrics(emailMetrics).map((email, index) => {
+                        const metrics = email.metrics || {};
+                        const sentCount = metrics.sentCount || 0;
+                        const openCount = metrics.openCount || 0;
+                        const uniqueOpenCount = metrics.uniqueOpenCount || 0;
+                        const clickCount = metrics.clickCount || 0;
+                        const uniqueClickCount = metrics.uniqueClickCount || 0;
+                        const bounceCount = metrics.bounceCount || 0;
+                        const unsubscribeCount = metrics.unsubscribeCount || 0;
+                        
+                        const openRate = sentCount > 0 ? (openCount / sentCount * 100) : 0;
+                        const clickRate = sentCount > 0 ? (clickCount / sentCount * 100) : 0;
+                        const ctr = calculateCTR(clickCount, openCount);
+                        
+                        return (
+                          <tr key={email.id || email.emailId || index} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <Mail className="h-4 w-4 text-gray-400 mr-2" />
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {email.name || email.subject || `Email ${index + 1}`}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {email.account?.name || 'Unknown Account'}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm text-gray-900 max-w-xs truncate" title={email.subject}>
+                                {email.subject || 'No Subject'}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {email.sentDate ? new Date(email.sentDate).toLocaleDateString() : 
+                                 email.campaign?.name ? `Campaign: ${email.campaign.name}` :
+                                 'Unknown Date'}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 font-medium">
+                              {sentCount.toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
+                              {openCount.toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
+                              {uniqueOpenCount.toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              <span className={`${
+                                openRate >= 25 ? 'text-green-600' :
+                                openRate >= 15 ? 'text-yellow-600' :
+                                'text-red-600'
+                              }`}>
+                                {openRate.toFixed(1)}%
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
+                              {clickCount.toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
+                              {uniqueClickCount.toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              <span className={`${
+                                clickRate >= 5 ? 'text-green-600' :
+                                clickRate >= 2 ? 'text-yellow-600' :
+                                'text-red-600'
+                              }`}>
+                                {clickRate.toFixed(1)}%
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              <span className={`${
+                                ctr >= 20 ? 'text-green-600' :
+                                ctr >= 10 ? 'text-yellow-600' :
+                                'text-red-600'
+                              }`}>
+                                {ctr.toFixed(1)}%
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
+                              {bounceCount.toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
+                              {unsubscribeCount.toLocaleString()}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {pagination.totalPages > 1 && (
+                  <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                    <div className="text-sm text-gray-700">
+                      Showing {((pagination.page - 1) * pagination.pageSize) + 1} to{' '}
+                      {Math.min(pagination.page * pagination.pageSize, pagination.totalItems)} of{' '}
+                      {pagination.totalItems} results
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handlePageChange(pagination.page - 1)}
+                        disabled={pagination.page <= 1}
+                        className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                          const pageNum = i + 1;
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => handlePageChange(pageNum)}
+                              className={`px-3 py-1 text-sm rounded ${
+                                pageNum === pagination.page
+                                  ? 'bg-purple-600 text-white'
+                                  : 'text-gray-700 hover:bg-gray-100'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                        
+                        {pagination.totalPages > 5 && (
+                          <>
+                            <span className="px-2 text-gray-500">...</span>
+                            <button
+                              onClick={() => handlePageChange(pagination.totalPages)}
+                              className={`px-3 py-1 text-sm rounded ${
+                                pagination.totalPages === pagination.page
+                                  ? 'bg-purple-600 text-white'
+                                  : 'text-gray-700 hover:bg-gray-100'
+                              }`}
+                            >
+                              {pagination.totalPages}
+                            </button>
+                          </>
+                        )}
+                      </div>
+                      
+                      <button
+                        onClick={() => handlePageChange(pagination.page + 1)}
+                        disabled={pagination.page >= pagination.totalPages}
+                        className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Metrics;

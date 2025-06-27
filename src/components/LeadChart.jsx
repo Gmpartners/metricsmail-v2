@@ -65,7 +65,7 @@ const LeadChart = ({
 
       if (response.success && response.data) {
         setLeadData(response.data);
-        const processedData = processChartData(response.data);
+        const processedData = processChartData(response.data, filters);
         setChartData(processedData);
         setLastUpdate(new Date());
       } else {
@@ -83,62 +83,55 @@ const LeadChart = ({
     }
   };
 
-  const processChartData = (apiData) => {
+  // ✅ NOVO: Função melhorada para processar dados com datas corretas
+  const processChartData = (apiData, filters) => {
     if (!apiData || !apiData.datasets || apiData.datasets.length === 0) {
       return [];
     }
 
-    // ✅ CORREÇÃO: Usar data local com compensação de timezone consistente
-    const today = new Date();
-    const todayCompensated = new Date(today.getTime() - (today.getTimezoneOffset() * 60000));
-    todayCompensated.setHours(0, 0, 0, 0);
-
-    let minDate = null;
-    let maxDate = null;
+    // ✅ CORREÇÃO: Usar as datas dos filtros para determinar o range correto
+    const startDate = new Date(filters.startDate);
+    const endDate = new Date(filters.endDate);
     
-    apiData.datasets.forEach(dataset => {
-      if (dataset.data && Array.isArray(dataset.data) && dataset.data.length > 0) {
-        dataset.data.forEach(item => {
-          if (item.date) {
-            const date = new Date(item.date);
-            if (!minDate || date < minDate) minDate = date;
-            if (!maxDate || date > maxDate) maxDate = date;
-          }
-        });
-      }
+    console.log('📊 Processando dados do gráfico:', {
+      startDate: filters.startDate,
+      endDate: filters.endDate,
+      datasets: apiData.datasets.length
     });
 
-    if (!minDate || !maxDate) {
-      return [];
-    }
-
+    // Criar array de todas as datas no período
     const allDates = [];
-    const currentDate = new Date(minDate);
+    const currentDate = new Date(startDate);
     
-    while (currentDate <= maxDate) {
+    while (currentDate <= endDate) {
       allDates.push(currentDate.toISOString().split('T')[0]);
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    const chartPoints = allDates.map(date => {
-      const dataDate = new Date(date);
-      dataDate.setHours(0, 0, 0, 0);
-      const daysDiff = Math.floor((todayCompensated - dataDate) / (1000 * 60 * 60 * 24));
+    // ✅ CORREÇÃO: Determinar "hoje" usando a mesma lógica do backend
+    const today = new Date();
+    const todayStr = new Date(today.getTime() - (today.getTimezoneOffset() * 60000))
+      .toISOString().split('T')[0];
+
+    const chartPoints = allDates.map(dateStr => {
+      const isToday = dateStr === todayStr;
+      const isRecent = Math.abs(new Date(dateStr) - new Date(todayStr)) <= 2 * 24 * 60 * 60 * 1000;
       
       const dataPoint = {
-        date: new Date(date).toLocaleDateString('pt-BR', { 
+        date: new Date(dateStr).toLocaleDateString('pt-BR', { 
           day: '2-digit',
           month: '2-digit'
         }),
-        fullDate: date,
+        fullDate: dateStr,
         leads: 0,
-        isRealTime: daysDiff <= 2,
-        isToday: daysDiff === 0,
+        isRealTime: isToday || isRecent,
+        isToday: isToday,
         accountsData: []
       };
 
+      // Somar dados de todas as contas para essa data
       apiData.datasets.forEach(dataset => {
-        const dayData = dataset.data?.find(item => item.date === date);
+        const dayData = dataset.data?.find(item => item.date === dateStr);
         if (dayData) {
           const count = dayData.count || 0;
           dataPoint.leads += count;
@@ -150,6 +143,7 @@ const LeadChart = ({
             color: dataset.color || '#3B82F6'
           });
         } else {
+          // Adicionar entrada com 0 leads para manter consistência
           dataPoint.accountsData.push({
             accountName: dataset.accountName || 'Conta sem nome',
             count: 0,
@@ -157,6 +151,8 @@ const LeadChart = ({
           });
         }
       });
+
+      console.log(`📈 Data ${dateStr}: ${dataPoint.leads} leads (isToday: ${isToday}, isRealTime: ${dataPoint.isRealTime})`);
 
       return dataPoint;
     });
@@ -173,8 +169,13 @@ const LeadChart = ({
           <div className="space-y-1">
             <p className="text-sm font-semibold text-blue-600">
               {`${data.leads} leads total`}
-              {data.isRealTime && (
+              {data.isToday && (
                 <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                  Hoje
+                </span>
+              )}
+              {data.isRealTime && !data.isToday && (
+                <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                   Tempo Real
                 </span>
               )}
@@ -183,7 +184,9 @@ const LeadChart = ({
             {data.accountsData && data.accountsData.length > 0 && (
               <div className="mt-2 pt-2 border-t border-gray-100">
                 <p className="text-xs text-gray-600 mb-1">Por conta:</p>
-                {data.accountsData.map((account, idx) => (
+                {data.accountsData
+                  .filter(account => account.count > 0)
+                  .map((account, idx) => (
                   <div key={idx} className="flex items-center gap-2 text-xs">
                     <div 
                       className="w-3 h-3 rounded-full" 

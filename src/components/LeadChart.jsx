@@ -43,17 +43,23 @@ const LeadChart = ({
         filters.startDate = customDateRange.startDate;
         filters.endDate = customDateRange.endDate;
       } else {
-        const hoje = new Date();
-        const diasAtras = new Date(hoje.getTime() - parseInt(selectedPeriod) * 24 * 60 * 60 * 1000);
+        // ✅ CORREÇÃO: Usar o mesmo método do Dashboard para consistência
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - parseInt(selectedPeriod));
         
-        // Usar formato ISO simples sem conversão de timezone
-        filters.startDate = diasAtras.toISOString().split('T')[0];
-        filters.endDate = hoje.toISOString().split('T')[0];
+        // ✅ CORREÇÃO: Usar compensação de timezone como no Metrics.jsx
+        filters.startDate = new Date(startDate.getTime() - (startDate.getTimezoneOffset() * 60000))
+          .toISOString().split('T')[0];
+        filters.endDate = new Date(endDate.getTime() - (endDate.getTimezoneOffset() * 60000))
+          .toISOString().split('T')[0];
       }
 
       if (selectedAccount && selectedAccount !== 'all') {
         filters.accountIds = selectedAccount;
       }
+
+      console.log('📅 LeadChart - Filtros aplicados:', filters);
 
       const response = await metricsMailApi.getLeadStats(user.uid, filters);
 
@@ -82,8 +88,10 @@ const LeadChart = ({
       return [];
     }
 
+    // ✅ CORREÇÃO: Usar data local com compensação de timezone consistente
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayCompensated = new Date(today.getTime() - (today.getTimezoneOffset() * 60000));
+    todayCompensated.setHours(0, 0, 0, 0);
 
     let minDate = null;
     let maxDate = null;
@@ -115,7 +123,7 @@ const LeadChart = ({
     const chartPoints = allDates.map(date => {
       const dataDate = new Date(date);
       dataDate.setHours(0, 0, 0, 0);
-      const daysDiff = Math.floor((today - dataDate) / (1000 * 60 * 60 * 24));
+      const daysDiff = Math.floor((todayCompensated - dataDate) / (1000 * 60 * 60 * 24));
       
       const dataPoint = {
         date: new Date(date).toLocaleDateString('pt-BR', { 

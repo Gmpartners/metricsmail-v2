@@ -43,16 +43,12 @@ const LeadChart = ({
         filters.startDate = customDateRange.startDate;
         filters.endDate = customDateRange.endDate;
       } else {
-        // ✅ CORREÇÃO: Usar o mesmo método do Dashboard para consistência
         const endDate = new Date();
         const startDate = new Date();
         startDate.setDate(endDate.getDate() - parseInt(selectedPeriod));
         
-        // ✅ CORREÇÃO: Usar compensação de timezone como no Metrics.jsx
-        filters.startDate = new Date(startDate.getTime() - (startDate.getTimezoneOffset() * 60000))
-          .toISOString().split('T')[0];
-        filters.endDate = new Date(endDate.getTime() - (endDate.getTimezoneOffset() * 60000))
-          .toISOString().split('T')[0];
+        filters.startDate = startDate.toISOString().split('T')[0];
+        filters.endDate = endDate.toISOString().split('T')[0];
       }
 
       if (selectedAccount && selectedAccount !== 'all') {
@@ -83,13 +79,21 @@ const LeadChart = ({
     }
   };
 
-  // ✅ NOVO: Função melhorada para processar dados com datas corretas
+  const formatDateDisplay = (dateStr) => {
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}`;
+  };
+
+  const formatDateTooltip = (dateStr) => {
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}`;
+  };
+
   const processChartData = (apiData, filters) => {
     if (!apiData || !apiData.datasets || apiData.datasets.length === 0) {
       return [];
     }
 
-    // ✅ CORREÇÃO: Usar as datas dos filtros para determinar o range correto
     const startDate = new Date(filters.startDate);
     const endDate = new Date(filters.endDate);
     
@@ -99,7 +103,6 @@ const LeadChart = ({
       datasets: apiData.datasets.length
     });
 
-    // Criar array de todas as datas no período
     const allDates = [];
     const currentDate = new Date(startDate);
     
@@ -108,20 +111,15 @@ const LeadChart = ({
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    // ✅ CORREÇÃO: Determinar "hoje" usando a mesma lógica do backend
     const today = new Date();
-    const todayStr = new Date(today.getTime() - (today.getTimezoneOffset() * 60000))
-      .toISOString().split('T')[0];
+    const todayStr = today.toISOString().split('T')[0];
 
     const chartPoints = allDates.map(dateStr => {
       const isToday = dateStr === todayStr;
       const isRecent = Math.abs(new Date(dateStr) - new Date(todayStr)) <= 2 * 24 * 60 * 60 * 1000;
       
       const dataPoint = {
-        date: new Date(dateStr).toLocaleDateString('pt-BR', { 
-          day: '2-digit',
-          month: '2-digit'
-        }),
+        date: formatDateDisplay(dateStr),
         fullDate: dateStr,
         leads: 0,
         isRealTime: isToday || isRecent,
@@ -129,7 +127,6 @@ const LeadChart = ({
         accountsData: []
       };
 
-      // Somar dados de todas as contas para essa data
       apiData.datasets.forEach(dataset => {
         const dayData = dataset.data?.find(item => item.date === dateStr);
         if (dayData) {
@@ -143,7 +140,6 @@ const LeadChart = ({
             color: dataset.color || '#3B82F6'
           });
         } else {
-          // Adicionar entrada com 0 leads para manter consistência
           dataPoint.accountsData.push({
             accountName: dataset.accountName || 'Conta sem nome',
             count: 0,
@@ -152,7 +148,7 @@ const LeadChart = ({
         }
       });
 
-      console.log(`📈 Data ${dateStr}: ${dataPoint.leads} leads (isToday: ${isToday}, isRealTime: ${dataPoint.isRealTime})`);
+      console.log(`📈 Data ${dateStr} (exibida como ${dataPoint.date}): ${dataPoint.leads} leads`);
 
       return dataPoint;
     });
@@ -165,7 +161,9 @@ const LeadChart = ({
       const data = payload[0].payload;
       return (
         <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg max-w-xs">
-          <p className="font-medium text-gray-900 mb-2">{`Data: ${label}`}</p>
+          <p className="font-medium text-gray-900 mb-2">
+            {`Data: ${formatDateTooltip(data.fullDate)}`}
+          </p>
           <div className="space-y-1">
             <p className="text-sm font-semibold text-blue-600">
               {`${data.leads} leads total`}

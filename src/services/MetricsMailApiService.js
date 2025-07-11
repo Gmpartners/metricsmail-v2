@@ -25,7 +25,6 @@ class MetricsMailApiService {
           _v: '2.1.0'
         };
         
-        // REMOVIDO headers de cache-control que causavam CORS
         config.headers = {
           'x-api-key': this.API_KEY
         };
@@ -72,7 +71,6 @@ class MetricsMailApiService {
     console.log('✅ Cache API limpo - nova instância criada');
   }
 
-  // ✨ NOVO MÉTODO: Dashboard Unificado
   async getDashboardMetrics(userId, filters = {}) {
     if (!userId) {
       return { success: false, data: null, message: "ID de usuário não fornecido" };
@@ -378,12 +376,12 @@ async getLeadStats(userId, filters = {}) {
       }
     }
     
-    console.log('📅 Lead Stats - Filtros:', params);
+    console.log('📅 Lead Stats - Filtros enviados:', params);
     
     const response = await this.api.get(`/users/${userId}/lead-stats`, { params });
     
     if (response.success && response.data) {
-      console.log('✅ Dados recebidos:', response.data);
+      console.log('✅ Lead Stats - Dados recebidos:', response.data);
       
       if (!response.data.datasets || response.data.datasets.length === 0) {
         console.log('⚠️ Nenhum dataset encontrado');
